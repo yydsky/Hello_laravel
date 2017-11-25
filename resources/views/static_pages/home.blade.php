@@ -1,15 +1,31 @@
 @extends('layouts.default')
+
 @section('content')
-    <div class="jumbotron">
-        <h1>Hello World！</h1>
-        <p class="lead">
-            Hello!!! <a href="https://www.baidu.com"> 欢迎</a> 进入。
-        </p>
-        <p>
-            改变世界！
-        </p>
-        <p>
-            <a class="btn btn-lg btn-success" href="{{route('signup')}}" role="button">注册</a>
-        </p>
-    </div>
+    @if (Auth::check())
+        <div class="row">
+            <div class="col-md-8">
+                <section class="status_form">
+                    @include('shared._status_form')
+                </section>
+            </div>
+            <aside class="col-md-4">
+                <section class="user_info">
+                    @include('shared._user_info', ['user' => Auth::user()])
+                </section>
+            </aside>
+        </div>
+    @else
+        <div class="jumbotron">
+            <h1>Hello Laravel</h1>
+            <p class="lead">
+                你现在所看到的是 <a href="https://www.baidu.com">MyLaravel</a> 的主页。
+            </p>
+            <p>
+                Hello World!
+            </p>
+            <p>
+                <a class="btn btn-lg btn-success" href="{{ route('signup') }}" role="button">现在注册</a>
+            </p>
+        </div>
+    @endif
 @stop

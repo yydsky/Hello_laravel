@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Models\User;
 use Auth;
+use Illuminate\Support\Facades\Mail;
 
 class UsersController extends Controller
 {
@@ -16,7 +17,10 @@ class UsersController extends Controller
 
     public function show(User $user)
     {
-        return view('users.show', compact('user'));
+        $statuses = $user->statuses()
+            ->orderBy('created_at','desc')
+            ->paginate(30);
+        return view('users.show', compact('user', 'statuses'));
     }
 
     public function store(Request $request)
@@ -33,9 +37,31 @@ class UsersController extends Controller
             'password' => bcrypt($request->password),
         ]);
 
-        //Auth::login($user);
+        Auth::login($user);
         session()->flash('success', '欢迎，您将在这里开启一段新的旅程~');
         return redirect()->route('users.show', [$user]);
+
+        send :
+        email;
+        $this->sendEmailConfirmationTo($user);
+        session()->flash('success', '验证邮件已发送到你的邮箱，请注意查收！');
+        return redirect('/');
+
+    }
+
+    protected function sendEmailConfirmationTo($user)
+    {
+        $view = 'emails.confirm';
+        $data = compact('user');
+        $from = '262488431@qq.com';
+        $name = 'yyd';
+        $to = $user->email;
+        $subject = "感谢注册 ，请确认你的邮箱。";
+
+        Mail::send($view, $data, function ($message) use ($from, $name, $to, $subject) {
+            $message->from($from, $name)->to($to)->subject($subject);
+        });
+
     }
 
     //编辑用户的操作
@@ -44,6 +70,7 @@ class UsersController extends Controller
         $this->authorize('update', $user);
         return view('users.edit', compact('user'));
     }
+
     //用户信息更改
     public function update(User $user, Request $request)
     {
@@ -65,27 +92,46 @@ class UsersController extends Controller
 
         return redirect()->route('users.show', $user->id);
     }
+
     //过滤未登录用户的权限
     public function __construct()
     {
-        $this->middleware('auth', [
-            'except' => ['show', 'create', 'store','index']
-        ]);
+        $this->middleware('auth', ['except' => ['show', 'create',
+            'store', 'index', 'confirmEmail']]);
 
         $this->middleware('guest', [
             'only' => ['create']
         ]);
     }
-    public function index(){
+
+    public function index()
+    {
         $users = User::all();
-        return view('users.index',compact('users'));
+        return view('users.index', compact('users'));
     }
+
     public function destroy(User $user)
     {
-        $this->authorize('destory',$user);
+        $this->authorize('destory', $user);
         $user->delete();
         session()->flash('success', '成功删除用户！');
         return back();
     }
+
+
+//注册激活
+    public function confirmEmail($token)
+    {
+        $user = User::where('activation_token', $token)->firstOrFail();
+
+        $user->activated = true;
+        $user->activation_token = null;
+        $user->save();
+
+        Auth::login($user);
+        session()->flash('success', '恭喜你，激活成功!');
+        return redirect()->route('users.show', [$user]);
+    }
+
 
 }
