@@ -7,6 +7,7 @@
                 <section class="status_form">
                     @include('shared._status_form')
                 </section>
+
             </div>
             <aside class="col-md-4">
                 <section class="user_info">
